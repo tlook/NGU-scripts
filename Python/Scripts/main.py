@@ -5,7 +5,9 @@ import ngucon as ncon
 import math
 import numpy
 import pytesseract
+import queue
 import re
+import threading
 import time
 import win32api
 import win32con as wcon
@@ -14,6 +16,9 @@ import win32ui
 from ctypes import windll
 from PIL import Image as image
 from PIL import ImageFilter
+from tkinter import (Button, Frame, IntVar, Label, OptionMenu, StringVar, Tk,
+                     BOTH, HORIZONTAL, DISABLED)
+from tkinter.ttk import Progressbar
 
 
 class Window():
@@ -559,8 +564,8 @@ class Features(Navigation, Inputs):
         magic -- Set to true if these are magic NGUs
         """
         if len(targets) > 9:
-            raise RuntimeError("Passing too many NGU's to assign_ngu,"+
-                " allowed: 9, sent: " + str(len(targets)))
+            raise RuntimeError("Passing too many NGU's to assign_ngu," +
+                               " allowed: 9, sent: " + str(len(targets)))
         if magic:
             self.ngu_magic()
         else:
@@ -737,6 +742,70 @@ class Upgrade(Navigation):
         self.click(ncon.EMBARBUYX, ncon.EMBUYY)
 
 
+class Gui(Frame):
+    """GUI class."""
+
+    def __init__(self):
+        super().__init__()
+        self.init_window()
+
+    def init_window(self):
+        self.master.title("Auto NGU")
+        self.pack(fill=BOTH, expand=1)
+        self.progress_value = IntVar()
+        #Label(self.master, text="Speedrun").grid(row=0)
+        #speedrun = Entry(self.master)
+        #speedrun.grid(row=0, column=1)
+        #self.pack(fill=BOTH, expand=1)
+
+        
+        self.duration = StringVar(self)
+        self.duration.set("3")
+
+        self.speedrun = OptionMenu(self, self.duration, "3", "5", "7", "9", "12",
+                              "15", "30", "60")
+        self.speedrun.pack()
+        self.speedrun.place(x=100, y=0)
+
+        self.runButton = Button(self, text="Run", command=self.start)
+        self.runButton.place(x=100, y=550)
+
+        self.exitButton = Button(self, text="Exit", command=self.exit)
+        self.exitButton.place(x=200, y=550)
+
+        self.task = Label(self, text="Placeholder")
+        self.task.place(x=25, y=475)
+        self.progress = Progressbar(self, orient=HORIZONTAL, length=250,
+                                    mode="determinate",
+                                    variable=self.progress_value)
+        self.progress.place(x=25, y=500)
+
+    def start(self): 
+        self.runButton.config(state = DISABLED)
+        self.queue = queue.Queue()
+        self.progress_value.set(50)
+
+        print(self.duration.get())
+        ScriptHandler(self.queue).start()
+
+
+    def exit(self):
+        exit()
+
+
+class ScriptHandler(threading.Thread):
+    """This class communicates with the GUI."""
+
+    def __init__(self, queue):
+        """Initialize thread and queue."""
+        threading.Thread.__init__(self)
+        self.queue = queue
+
+    def run(self):
+        time.sleep(1)
+        print("d")
+        self.queue.put("Task finished")
+
 def speedrun(duration, f):
     """Start a speedrun.
 
@@ -806,8 +875,15 @@ def speedrun(duration, f):
     f.speedrun_bloodpill()
     return
 
+def main():
+    root = Tk()
+    root.geometry("300x600")
+    gui = Gui()
+    root.mainloop()
 
-w = Window()
+main()
+
+"""w = Window()
 i = Inputs()
 nav = Navigation()
 feature = Features()
@@ -826,11 +902,12 @@ u = Upgrade(37500, 37500, 2, 2, 5)
 while True:  # main loop
     #feature.snipe(0, 5, once=False, highest=True)
     #feature.click(ncon.LEFTARROWX, ncon.LEFTARROWY, button="right")
-    #feature.ygg()
+    feature.ygg()
     #feature.merge_equipment()
     #feature.boost_equipment()
-    #time.sleep(120)
+    time.sleep(120)
     #feature.menu("digger")
-    speedrun(5, feature)
-    s.print_exp()
-    u.em()
+    #speedrun(5, feature)
+    #s.print_exp()
+    #u.em()
+"""
