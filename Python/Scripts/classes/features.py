@@ -57,7 +57,10 @@ class Features(Navigation, Inputs):
                 for i in range(0, bossdiff):
                     self.click(ncon.FIGHTX, ncon.FIGHTY, fast=True)
                 time.sleep(userset.SHORT_SLEEP)
-                current_boss = int(self.get_current_boss())
+                try:
+                    current_boss = int(self.get_current_boss())
+                except ValueError:
+                    current_boss = 1
                 x += 1
                 if x > 7:  # Safeguard if number is too low to reach target boss, otherwise we get stuck here
                     print("Couldn't reach the target boss, something probably went wrong the last rebirth.")
@@ -230,10 +233,20 @@ class Features(Navigation, Inputs):
         self.click(ncon.CONFIRMX, ncon.CONFIRMY)
         return
 
-    def pit(self):
-        """Throws money into the pit."""
+    def pit(self, loadout=0):
+        """Throws money into the pit.
+
+        Keyword arguments:
+        loadout -- The loadout you wish to equip before throwing gold
+                   into the pit, for gear you wish to shock. Make
+                   sure that you don't get cap-blocked by either using
+                   the unassign setting in the game or swapping gear that
+                   doesn't have e/m cap.
+        """
         color = self.get_pixel_color(ncon.PITCOLORX, ncon.PITCOLORY)
         if (color == ncon.PITREADY):
+            if loadout:
+                self.loadout(loadout)
             self.menu("pit")
             self.click(ncon.PITX, ncon.PITY)
             self.click(ncon.CONFIRMX, ncon.CONFIRMY)
@@ -267,9 +280,10 @@ class Features(Navigation, Inputs):
                     color = self.get_pixel_color(ncon.SANITY_AUG_SCROLLX,
                                                  ncon.SANITY_AUG_SCROLLY_BOT)
                     i += 1
-                    if i > 5:  # Safeguard if something goes wrong with augs
+                    if i > 5 and i <= 10:  # Safeguard if something goes wrong with augs
+                        Navigation.current_menu = ""
                         self.menu("augmentations")
-                    elif i > 20:
+                    elif i > 10:
                         print("Couldn't assign augments")
                         break
 
@@ -282,20 +296,38 @@ class Features(Navigation, Inputs):
                     color = self.get_pixel_color(ncon.SANITY_AUG_SCROLLX,
                                                  ncon.SANITY_AUG_SCROLLY_TOP)
                     i += 1
-                    if i > 5:  # Safeguard if something goes wrong with augs
+                    if i > 5 and i <= 10:  # Safeguard if something goes wrong with augs
+                        Navigation.current_menu = ""
                         self.menu("augmentations")
-                    elif i > 20:
+                    elif i > 10:
                         print("Couldn't assign augments")
                         break
             self.click(ncon.AUGMENTX, ncon.AUGMENTY[k])
 
-    def time_machine(self, magic=False):
-        """Add energy and/or magic to TM."""
+    def time_machine(self, e, m=0, magic=False):
+        """Add energy and/or magic to TM.
+
+        Example: self.time_machine(1000, 2000)
+                 self.time_machine(1000, magic=True)
+                 self.time_machine(1000)
+
+        First example will add 1000 energy and 2000 magic to TM.
+        Second example will add 1000 energy and 1000 magic to TM.
+        Third example will add 1000 energy to TM.
+
+        Keyword arguments:
+        e -- The amount of energy to put into TM.
+        m -- The amount of magic to put into TM, if this is 0, it will use the
+             energy value to save unnecessary clicks to the input box.
+        magic -- Set to true if you wish to add magic as well"""
         self.menu("timemachine")
         self.input_box()
-        self.send_string("600000000")
+        self.send_string(e)
         self.click(ncon.TMSPEEDX, ncon.TMSPEEDY)
-        if magic:
+        if magic or m:
+            if m:
+                self.input_box()
+                self.send_string(m)
             self.click(ncon.TMMULTX, ncon.TMMULTY)
 
     def blood_magic(self, target):
